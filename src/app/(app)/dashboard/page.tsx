@@ -34,17 +34,74 @@ export default async function HomePage() {
     }
   }
 
+  // Weakest topic (with data)
+  const weakest = TOPICS
+    .filter(t => topicStats[t.id].exams > 0)
+    .sort((a, b) => topicStats[a.id].avgScore - topicStats[b.id].avgScore)[0]
+
+  const rightCards = [
+    {
+      href: '/exam?topics=tema6,tema7,tema8,tema9,tema10&n=60&mode=exam&minutes=75',
+      tag: 'Simulacro oficial',
+      title: '60 preguntas · 75 min',
+      sub: 'Todos los temas · penalización activa',
+      subColor: 'var(--muted)',
+      icon: '🎯',
+    },
+    {
+      href: '/exam?topics=tema6,tema7,tema8,tema9,tema10&n=20&mode=study&minutes=999',
+      tag: 'Modo estudio',
+      title: 'Estudio libre',
+      sub: 'Sin tiempo · feedback inmediato',
+      subColor: 'var(--muted)',
+      icon: '📖',
+    },
+    {
+      href: weakest
+        ? `/exam?topics=${weakest.id}&n=20&mode=exam&minutes=30`
+        : '/setup',
+      tag: 'Mi punto débil',
+      title: weakest ? weakest.full : 'Sin datos aún',
+      sub: weakest
+        ? `${formatScore(topicStats[weakest.id].avgScore)}/10 de media`
+        : 'Haz un examen primero',
+      subColor: weakest ? 'var(--err)' : 'var(--muted)',
+      icon: '💀',
+    },
+    {
+      href: `/exam?topics=tema6,tema7,tema8,tema9,tema10&n=20&mode=exam&minutes=30&notFailed=1`,
+      tag: 'Sin responder',
+      title: 'Preguntas nuevas',
+      sub: failedCount > 0 ? `Excluye ${failedCount} falladas` : 'Todas disponibles',
+      subColor: 'var(--muted)',
+      icon: '🆕',
+    },
+    {
+      href: '/exam?topics=tema6,tema7,tema8,tema9,tema10&n=10&mode=exam&minutes=10',
+      tag: 'Relámpago',
+      title: '10 preguntas · 10 min',
+      sub: 'Para repasar rápido',
+      subColor: 'var(--muted)',
+      icon: '⚡',
+    },
+  ]
+
   return (
     <>
       <style>{`
-        .stat-cell:hover { background: var(--bg2); }
+        .stat-cell:hover  { background: var(--bg2); }
         .topic-row:hover  { background: var(--bg2); }
-        .session-row:hover { background: var(--bg2); }
+        .session-row:hover{ background: var(--bg2); }
+        .topic-pill:hover { opacity:.75; transform:translateY(-1px); }
+        .right-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-3px); border-color:var(--border-2); }
+        .right-card:hover .arrow-circle { background:var(--ink); color:#fff; border-color:var(--ink); }
+        .main-cta:hover   { box-shadow:var(--shadow-xl); transform:translateY(-3px); background:#243d30; }
+        .main-cta:hover .arrow-circle-dark { background:#fff; color:var(--ink); border-color:#fff; }
       `}</style>
 
-      <div style={{ display:'flex', flexDirection:'column', gap:44 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:48 }}>
 
-        {/* ── HERO ───────────────────────────────────────── */}
+        {/* ── HERO ── */}
         <section className="animate-up">
           <div style={{
             display:'flex', alignItems:'center', gap:8, marginBottom:22,
@@ -63,19 +120,18 @@ export default async function HomePage() {
 
           <p style={{fontSize:'1rem', color:'var(--muted)', lineHeight:1.7, maxWidth:580}}>
             Banco de <strong style={{color:'var(--ink)'}}>{qCount} preguntas</strong> repartidas
-            entre los temas 6–10. Modo examen con penalización por fallos{' '}
-            (3 mal restan 1 bien) y modo estudio con feedback inmediato.{' '}
+            entre los temas 6–10. Modo examen con penalización por fallos
+            (3 mal restan 1 bien) y modo estudio con feedback inmediato.
             Tu progreso queda guardado.
           </p>
         </section>
 
-        {/* ── STATS BAR ──────────────────────────────────── */}
+        {/* ── STATS BAR ── */}
         <section className="animate-up" style={{animationDelay:'.07s'}}>
           <div style={{
             display:'grid', gridTemplateColumns:'repeat(4,1fr)',
             border:'1px solid var(--border)', borderRadius:16,
-            background:'var(--card)', overflow:'hidden',
-            boxShadow:'var(--shadow-sm)',
+            background:'var(--card)', overflow:'hidden', boxShadow:'var(--shadow-sm)',
           }}>
             {[
               { value: qCount,        label: 'Preguntas en banco', sub: 'disponibles' },
@@ -86,8 +142,7 @@ export default async function HomePage() {
               <div key={i} className="stat-cell" style={{
                 padding:'22px 24px',
                 borderRight: i < 3 ? '1px solid var(--border)' : 'none',
-                transition:'background .2s',
-                cursor:'default',
+                transition:'background .2s', cursor:'default',
               }}>
                 <div style={{fontSize:'2rem', fontWeight:900, letterSpacing:'-.03em', lineHeight:1, color:'var(--ink)', marginBottom:5}}>
                   {s.value}
@@ -99,112 +154,181 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── MAIN CARD GRID ─────────────────────────────── */}
+        {/* ── MAIN CARD GRID ── */}
         <section className="animate-up" style={{animationDelay:'.13s'}}>
-          <div className="grid-main">
-
-            {/* Big dark CTA */}
+          {/* Outer grid: left big card + right 2-col grid. Height is driven by the right side. */}
+          <div style={{
+            display:'grid',
+            gridTemplateColumns:'1.45fr 1fr',
+            gap:14,
+            alignItems:'stretch',
+          }}>
+            {/* ── Big dark CTA ── */}
             <Link href="/setup" style={{textDecoration:'none'}}>
-              <div className="card card-dark card-hover" style={{
-                minHeight:340, display:'flex', flexDirection:'column',
-                justifyContent:'space-between', padding:'30px',
-                cursor:'pointer', position:'relative', overflow:'hidden', borderRadius:20,
+              <div className="main-cta" style={{
+                height:'100%',
+                background:'var(--card-dark)',
+                border:'1px solid rgba(255,255,255,.07)',
+                borderRadius:20,
+                display:'flex', flexDirection:'column', justifyContent:'space-between',
+                padding:'30px', cursor:'pointer',
+                position:'relative', overflow:'hidden',
+                transition:'all .25s cubic-bezier(.22,1,.36,1)',
+                boxShadow:'var(--shadow)',
               }}>
-                <div style={{position:'absolute',bottom:-70,right:-70,width:260,height:260,borderRadius:'50%',background:'rgba(255,255,255,.04)',pointerEvents:'none'}} />
-                <div style={{position:'absolute',top:30,right:10,width:130,height:130,borderRadius:'50%',background:'rgba(255,255,255,.025)',pointerEvents:'none'}} />
+                <div style={{position:'absolute',bottom:-60,right:-60,width:240,height:240,borderRadius:'50%',background:'rgba(255,255,255,.035)',pointerEvents:'none'}} />
+                <div style={{position:'absolute',top:20,right:0,width:160,height:160,borderRadius:'50%',background:'rgba(255,255,255,.02)',pointerEvents:'none'}} />
 
                 <div style={{position:'relative'}}>
-                  <div className="label-tag-light" style={{marginBottom:12}}>Empezar</div>
-                  <h2 style={{fontSize:'2rem', fontWeight:900, letterSpacing:'-.03em', lineHeight:1.15, color:'#fff', marginBottom:16}}>
+                  <div style={{
+                    display:'inline-flex', alignItems:'center', gap:6, marginBottom:16,
+                    fontSize:'.68rem', fontWeight:700, letterSpacing:'.09em',
+                    textTransform:'uppercase', color:'rgba(255,255,255,.4)',
+                  }}>
+                    Empezar
+                  </div>
+                  <h2 style={{
+                    fontSize:'2.1rem', fontWeight:900, letterSpacing:'-.03em',
+                    lineHeight:1.1, color:'#fff', marginBottom:18,
+                  }}>
                     Nuevo examen tipo test
                   </h2>
-                  <p style={{fontSize:'.88rem', color:'rgba(255,255,255,.55)', lineHeight:1.65, maxWidth:360}}>
+                  <p style={{fontSize:'.9rem', color:'rgba(255,255,255,.5)', lineHeight:1.7, maxWidth:340}}>
                     Elige temas, cantidad de preguntas, modo y tiempo.
                     Reparto equilibrado entre los temas seleccionados.
                   </p>
                 </div>
 
-                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', position:'relative'}}>
+                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', position:'relative', marginTop:32}}>
                   <div style={{
                     display:'inline-flex', alignItems:'center', gap:8,
-                    padding:'6px 14px', borderRadius:99,
-                    background:'rgba(255,255,255,.09)', border:'1px solid rgba(255,255,255,.14)',
-                    fontSize:'.76rem', fontWeight:600, color:'rgba(255,255,255,.75)',
+                    padding:'7px 15px', borderRadius:99,
+                    background:'rgba(255,255,255,.08)', border:'1px solid rgba(255,255,255,.12)',
+                    fontSize:'.76rem', fontWeight:600, color:'rgba(255,255,255,.7)',
                   }}>
                     {qCount} preguntas disponibles
                   </div>
-                  <div className="btn-arrow btn-arrow-dark">→</div>
+                  <div className="arrow-circle-dark" style={{
+                    width:38, height:38, borderRadius:'50%',
+                    border:'1.5px solid rgba(255,255,255,.2)',
+                    background:'rgba(255,255,255,.08)', color:'#fff',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:'.95rem', flexShrink:0,
+                    transition:'all .2s',
+                  }}>→</div>
                 </div>
               </div>
             </Link>
 
-            {/* Right 2×2 */}
-            <div className="grid-right">
-              {[
-                {
-                  href: '/setup?failed=1',
-                  tag: 'Repaso',
-                  title: 'Solo falladas',
-                  sub: failedCount > 0 ? `${failedCount} pendientes` : 'sin pendientes',
-                  subColor: failedCount > 0 ? 'var(--warn)' : 'var(--ok)',
-                },
-                {
-                  href: '/ranking',
-                  tag: 'Progreso',
-                  title: 'Estadísticas',
-                  sub: hitRate > 0 ? `${hitRate}% acierto global` : '0% acierto global',
-                  subColor: 'var(--muted)',
-                },
-                {
-                  href: '/setup?failed=1',
-                  tag: 'Análisis',
-                  title: 'Revisar respuestas falladas',
-                  sub: `${failedCount} items`,
-                  subColor: 'var(--muted)',
-                },
-                {
-                  href: '/exam?topics=tema6,tema7,tema8,tema9,tema10&n=20&mode=exam&minutes=30',
-                  tag: 'Rápido',
-                  title: '20 preguntas · 30 min',
-                  sub: 'Todos los temas',
-                  subColor: 'var(--muted)',
-                },
-              ].map((card, i) => (
+            {/* ── Right 2×3 grid ── */}
+            <div style={{
+              display:'grid',
+              gridTemplateColumns:'1fr 1fr',
+              gridTemplateRows:'repeat(3, 1fr)',
+              gap:14,
+            }}>
+              {rightCards.map((card, i) => (
                 <Link key={i} href={card.href} style={{textDecoration:'none'}}>
-                  <div className="card card-hover" style={{
-                    height:'100%', cursor:'pointer', padding:'22px',
+                  <div className="right-card" style={{
+                    height:'100%', cursor:'pointer', padding:'20px',
                     display:'flex', flexDirection:'column', justifyContent:'space-between',
-                    borderRadius:16,
+                    background:'var(--card)', border:'1px solid var(--border)',
+                    borderRadius:16, boxShadow:'var(--shadow-sm)',
+                    transition:'all .22s cubic-bezier(.22,1,.36,1)',
                   }}>
                     <div>
-                      <div className="label-tag" style={{marginBottom:10}}>{card.tag}</div>
+                      <div style={{
+                        fontSize:'.67rem', fontWeight:700, letterSpacing:'.08em',
+                        textTransform:'uppercase', color:'var(--muted)', marginBottom:10,
+                      }}>{card.tag}</div>
                       <h3 style={{
-                        fontSize:'1.15rem', fontWeight:800, letterSpacing:'-.02em',
+                        fontSize:'1.05rem', fontWeight:800, letterSpacing:'-.02em',
                         color:'var(--ink)', lineHeight:1.25,
                       }}>{card.title}</h3>
                     </div>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:20}}>
-                      <span style={{fontSize:'.76rem', fontWeight:600, color:card.subColor}}>{card.sub}</span>
-                      <div className="btn-arrow">→</div>
+                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16}}>
+                      <span style={{fontSize:'.74rem', fontWeight:600, color:card.subColor, lineHeight:1.3, paddingRight:8}}>
+                        {card.sub}
+                      </span>
+                      <div className="arrow-circle" style={{
+                        width:32, height:32, borderRadius:'50%', flexShrink:0,
+                        border:'1.5px solid var(--border-2)',
+                        background:'var(--card)', color:'var(--ink)',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:'.85rem', transition:'all .2s',
+                      }}>→</div>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
           </div>
+
+          {/* ── Por un solo tema (full width below) ── */}
+          <div style={{marginTop:14}}>
+            <div style={{
+              background:'var(--card)', border:'1px solid var(--border)',
+              borderRadius:16, padding:'22px 24px', boxShadow:'var(--shadow-sm)',
+            }}>
+              <div style={{
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+                marginBottom:16, flexWrap:'wrap', gap:8,
+              }}>
+                <div>
+                  <div style={{fontSize:'.68rem', fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:'var(--muted)', marginBottom:6}}>
+                    Por un solo tema
+                  </div>
+                  <h3 style={{fontSize:'1.05rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-.01em'}}>
+                    Examen específico
+                  </h3>
+                </div>
+                <span style={{fontSize:'.78rem', color:'var(--muted)'}}>Elige el tema y lanza 20 preguntas directamente</span>
+              </div>
+              <div style={{display:'flex', gap:10, flexWrap:'wrap'}}>
+                {TOPICS.map(t => {
+                  const st = topicStats[t.id]
+                  return (
+                    <Link
+                      key={t.id}
+                      href={`/exam?topics=${t.id}&n=20&mode=exam&minutes=30`}
+                      className="topic-pill"
+                      style={{
+                        textDecoration:'none', display:'flex', alignItems:'center', gap:10,
+                        padding:'10px 16px', borderRadius:12,
+                        border:`1.5px solid ${t.color}33`,
+                        background: t.tint,
+                        transition:'all .18s cubic-bezier(.22,1,.36,1)',
+                        flex:'1 1 160px',
+                      }}
+                    >
+                      <div style={{
+                        width:32, height:32, borderRadius:8, flexShrink:0,
+                        background: t.color, color:'#fff',
+                        display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:'.65rem', fontWeight:900,
+                      }}>{t.short}</div>
+                      <div>
+                        <div style={{fontSize:'.78rem', fontWeight:700, color:t.color}}>{t.full}</div>
+                        <div style={{fontSize:'.68rem', color: st.exams > 0 ? t.color : 'var(--muted)', opacity: st.exams > 0 ? .7 : .5, marginTop:1}}>
+                          {st.exams > 0 ? `${formatScore(st.avgScore)}/10` : 'Sin datos'}
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* ── TOPIC PROGRESS ─────────────────────────────── */}
+        {/* ── TOPIC PROGRESS ── */}
         <section className="animate-up" style={{animationDelay:'.18s'}}>
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:18}}>
-            <h2 style={{fontSize:'1.05rem', fontWeight:800, letterSpacing:'-.01em', color:'var(--ink)'}}>
-              Progreso por tema
-            </h2>
+            <h2 style={{fontSize:'1.05rem', fontWeight:800, letterSpacing:'-.01em', color:'var(--ink)'}}>Progreso por tema</h2>
             <Link href="/ranking" style={{fontSize:'.8rem', fontWeight:600, color:'var(--accent)', textDecoration:'none'}}>
               Ver ranking global →
             </Link>
           </div>
-
           <div style={{border:'1px solid var(--border)', borderRadius:16, background:'var(--card)', overflow:'hidden', boxShadow:'var(--shadow-sm)'}}>
             {TOPICS.map((t, i) => {
               const st = topicStats[t.id]
@@ -220,33 +344,25 @@ export default async function HomePage() {
                   <div style={{display:'flex', alignItems:'center', gap:12}}>
                     <div style={{
                       width:34, height:34, borderRadius:9, flexShrink:0,
-                      background: t.tint, border:`1.5px solid ${t.color}33`,
+                      background:t.tint, border:`1.5px solid ${t.color}33`,
                       display:'flex', alignItems:'center', justifyContent:'center',
                       fontSize:'.65rem', fontWeight:900, color:t.color,
                     }}>{t.short}</div>
                     <div>
                       <div style={{fontSize:'.87rem', fontWeight:700, color:'var(--ink)'}}>{t.full}</div>
-                      {hasData ? (
-                        <div style={{fontSize:'.72rem', color:'var(--muted)', marginTop:1}}>
-                          {st.exams} ex. · {st.correct}✓ {st.wrong}✗
-                        </div>
-                      ) : (
-                        <div style={{fontSize:'.72rem', color:'var(--muted2)', marginTop:1}}>Sin datos aún</div>
-                      )}
+                      <div style={{fontSize:'.72rem', color:'var(--muted)', marginTop:1}}>
+                        {hasData ? `${st.exams} ex. · ${st.correct}✓ ${st.wrong}✗` : 'Sin datos aún'}
+                      </div>
                     </div>
                   </div>
                   <div className="progress-track">
                     <div className="progress-fill" style={{
                       width: hasData ? `${pct}%` : '0%',
-                      background: hasData
-                        ? pct >= 70 ? 'var(--ok)' : pct >= 50 ? t.color : 'var(--err)'
-                        : 'var(--border)',
+                      background: hasData ? (pct>=70 ? 'var(--ok)' : pct>=50 ? t.color : 'var(--err)') : 'var(--border)',
                     }} />
                   </div>
-                  <div style={{
-                    textAlign:'right', fontWeight:800, fontSize:'.9rem',
-                    color: !hasData ? 'var(--muted2)' : pct >= 50 ? 'var(--ok)' : 'var(--err)',
-                  }}>
+                  <div style={{textAlign:'right', fontWeight:800, fontSize:'.9rem',
+                    color: !hasData ? 'var(--muted2)' : pct>=50 ? 'var(--ok)' : 'var(--err)'}}>
                     {hasData ? `${formatScore(st.avgScore)}/10` : '—'}
                   </div>
                 </div>
@@ -255,12 +371,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── RECENT ACTIVITY ────────────────────────────── */}
+        {/* ── RECENT ACTIVITY ── */}
         {allSessions.length > 0 && (
           <section className="animate-up" style={{animationDelay:'.22s'}}>
-            <h2 style={{fontSize:'1.05rem', fontWeight:800, letterSpacing:'-.01em', marginBottom:18, color:'var(--ink)'}}>
-              Actividad reciente
-            </h2>
+            <h2 style={{fontSize:'1.05rem', fontWeight:800, letterSpacing:'-.01em', marginBottom:18, color:'var(--ink)'}}>Actividad reciente</h2>
             <div style={{border:'1px solid var(--border)', borderRadius:16, background:'var(--card)', overflow:'hidden', boxShadow:'var(--shadow-sm)'}}>
               <div style={{
                 display:'grid', gridTemplateColumns:'1fr 120px 90px 80px 70px',
@@ -268,8 +382,10 @@ export default async function HomePage() {
                 fontSize:'.68rem', fontWeight:700, letterSpacing:'.07em',
                 textTransform:'uppercase', color:'var(--muted2)', gap:16,
               }}>
-                <span>Examen</span><span>Fecha</span><span style={{textAlign:'center'}}>Resultado</span>
-                <span style={{textAlign:'center'}}>Modo</span><span style={{textAlign:'right'}}>Nota</span>
+                <span>Examen</span><span>Fecha</span>
+                <span style={{textAlign:'center'}}>Resultado</span>
+                <span style={{textAlign:'center'}}>Modo</span>
+                <span style={{textAlign:'right'}}>Nota</span>
               </div>
               {allSessions.map((s, i) => {
                 const score = Number(s.score)
@@ -310,16 +426,13 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* ── EMPTY STATE ──────────────────────────────────── */}
+        {/* ── EMPTY STATE ── */}
         {totalExams === 0 && (
           <section className="animate-up" style={{animationDelay:'.2s'}}>
-            <div style={{
-              border:'2px dashed var(--border-2)', borderRadius:20,
-              padding:'64px 40px', textAlign:'center',
-            }}>
+            <div style={{border:'2px dashed var(--border-2)', borderRadius:20, padding:'64px 40px', textAlign:'center'}}>
               <div style={{fontSize:'2.8rem', marginBottom:16}}>🚀</div>
               <h3 style={{fontWeight:800, fontSize:'1.25rem', marginBottom:10}}>¡Empieza tu primer examen!</h3>
-              <p style={{color:'var(--muted)', fontSize:'.9rem', marginBottom:28, maxWidth:400, margin:'0 auto 28px'}}>
+              <p style={{color:'var(--muted)', fontSize:'.9rem', maxWidth:400, margin:'0 auto 28px'}}>
                 {qCount} preguntas te esperan. Cada examen guarda tu progreso y actualiza el ranking.
               </p>
               <Link href="/setup" className="btn btn-accent" style={{padding:'12px 32px', fontSize:'.9rem'}}>

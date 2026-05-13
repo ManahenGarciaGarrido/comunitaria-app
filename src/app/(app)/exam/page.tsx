@@ -15,7 +15,8 @@ function ExamContent() {
   const nParam = Number(params.get('n') ?? 20)
   const mode = (params.get('mode') ?? 'exam') as ExamMode
   const minutes = Number(params.get('minutes') ?? 30)
-  const onlyFailed = params.get('failed') === '1'
+  const onlyFailed  = params.get('failed') === '1'
+  const notFailed   = params.get('notFailed') === '1'
 
   const [questions, setQuestions] = useState<ExamQuestion[]>([])
   const [answers, setAnswers] = useState<ExamAnswer[]>([])
@@ -40,6 +41,22 @@ function ExamContent() {
         const failedIds = (failedRows ?? []).map(r => r.question_id)
         if (failedIds.length === 0) { setError('No tienes preguntas falladas en estos temas.'); setLoading(false); return }
         query = query.in('id', failedIds)
+      }
+
+      if (notFailed) {
+        const { data: failedRows } = await supabase.from('user_failed').select('question_id').eq('user_id', user.id)
+        const failedIds = (failedRows ?? []).map(r => r.question_id)
+        if (failedIds.length > 0) {
+          // Exclude failed questions — shows only "fresh" ones
+          const { data: allData } = await query
+          const filtered = (allData ?? []).filter((q: any) => !failedIds.includes(q.id))
+          if (filtered.length === 0) { setError('No hay preguntas nuevas disponibles. ¡Has visto todas!'); setLoading(false); return }
+          const examQs = shuffle(filtered as any[]).slice(0, nParam).map(toExamQuestion)
+          setQuestions(examQs)
+          setAnswers(examQs.map(q => ({ questionId: q.id, selectedIndex: null, isCorrect: null })))
+          setLoading(false)
+          return
+        }
       }
 
       const { data, error: dbErr } = await query
