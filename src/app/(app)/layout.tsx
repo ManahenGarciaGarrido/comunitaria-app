@@ -20,13 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         role={profile?.role ?? 'student'}
         streak={profile?.streak ?? 0}
       />
-      <main style={{
-        flex: 1,
-        maxWidth: 900,
-        width: '100%',
-        margin: '0 auto',
-        padding: '28px 20px 60px',
-      }}>
+      <main style={{ flex: 1, maxWidth: 1120, width: '100%', margin: '0 auto', padding: '40px 28px 80px' }}>
         {children}
       </main>
     </div>
