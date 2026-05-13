@@ -14,9 +14,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .single()
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar username={profile?.username ?? ''} role={profile?.role ?? 'student'} streak={profile?.streak ?? 0} />
-      <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar
+        username={profile?.username ?? ''}
+        role={profile?.role ?? 'student'}
+        streak={profile?.streak ?? 0}
+      />
+      <main style={{
+        flex: 1,
+        maxWidth: 900,
+        width: '100%',
+        margin: '0 auto',
+        padding: '28px 20px 60px',
+      }}>
         {children}
       </main>
     </div>

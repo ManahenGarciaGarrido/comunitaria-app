@@ -26,16 +26,55 @@ export default function Navbar({ username, role, streak }: Props) {
     ...(role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
   ]
 
+  const isActive = (href: string) =>
+    pathname === href || (href === '/dashboard' && pathname === '/')
+
   return (
     <header style={{
-      background: 'var(--elev)',
-      borderBottom: '1px solid var(--line)',
-      position: 'sticky', top: 0, zIndex: 50,
+      background: 'rgba(255,255,255,.85)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      borderBottom: '1px solid var(--border)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 50,
+      boxShadow: '0 1px 0 rgba(26,23,20,.06)',
     }}>
-      <div style={{ maxWidth: 768, margin: '0 auto', padding: '0 16px', height: 54, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{
+        maxWidth: 900,
+        margin: '0 auto',
+        padding: '0 20px',
+        height: 58,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+      }}>
         {/* Logo */}
-        <Link href="/dashboard" style={{ fontWeight: 800, fontSize: '.95rem', color: 'var(--accent)', textDecoration: 'none', marginRight: 8 }}>
-          Comunitaria II
+        <Link href="/dashboard" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          textDecoration: 'none',
+          marginRight: 12,
+          flexShrink: 0,
+        }}>
+          <div style={{
+            width: 30, height: 30,
+            borderRadius: 8,
+            background: 'var(--accent)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '.75rem', fontWeight: 900, color: '#fff',
+          }}>
+            CII
+          </div>
+          <span style={{
+            fontWeight: 800,
+            fontSize: '.95rem',
+            color: 'var(--accent)',
+            letterSpacing: '-.01em',
+          }}>
+            Comunitaria II
+          </span>
         </Link>
 
         {/* Nav links */}
@@ -45,14 +84,14 @@ export default function Navbar({ username, role, streak }: Props) {
               key={l.href}
               href={l.href}
               style={{
-                padding: '5px 12px',
+                padding: '6px 13px',
                 borderRadius: 8,
-                fontSize: '.82rem',
+                fontSize: '.83rem',
                 fontWeight: 600,
                 textDecoration: 'none',
-                color: pathname === l.href || (l.href === '/dashboard' && pathname === '/') ? 'var(--accent)' : 'var(--ink-2)',
-                background: pathname === l.href || (l.href === '/dashboard' && pathname === '/') ? 'var(--accent-soft)' : 'transparent',
-                transition: 'background .15s',
+                color: isActive(l.href) ? 'var(--accent)' : 'var(--muted)',
+                background: isActive(l.href) ? 'var(--accent-soft)' : 'transparent',
+                transition: 'all .15s',
               }}
             >
               {l.label}
@@ -62,18 +101,49 @@ export default function Navbar({ username, role, streak }: Props) {
 
         {/* Streak */}
         {streak > 0 && (
-          <div style={{ fontSize: '.78rem', fontWeight: 700, color: 'var(--warn)', display: 'flex', alignItems: 'center', gap: 3 }}>
-            🔥 {streak}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '4px 10px',
+            borderRadius: 20,
+            background: 'var(--warn-soft)',
+            border: '1px solid rgba(146,88,13,.15)',
+          }}>
+            <span style={{ fontSize: '.85rem' }}>🔥</span>
+            <span style={{ fontSize: '.78rem', fontWeight: 800, color: 'var(--warn)' }}>{streak}</span>
           </div>
         )}
 
         {/* User */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-          <span style={{ fontSize: '.78rem', color: 'var(--muted)' }}>@{username}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 6 }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            padding: '5px 10px 5px 6px',
+            borderRadius: 20,
+            background: 'var(--bg2)',
+            border: '1px solid var(--border)',
+          }}>
+            <div style={{
+              width: 22, height: 22,
+              borderRadius: '50%',
+              background: 'var(--accent)',
+              color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.65rem', fontWeight: 800,
+            }}>
+              {username.charAt(0).toUpperCase()}
+            </div>
+            <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--ink2)' }}>
+              @{username}
+            </span>
+          </div>
           <button
             onClick={logout}
             className="btn btn-ghost"
-            style={{ padding: '4px 10px', fontSize: '.75rem' }}
+            style={{ padding: '5px 12px', fontSize: '.76rem' }}
           >
             Salir
           </button>

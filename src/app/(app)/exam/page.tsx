@@ -28,7 +28,6 @@ function ExamContent() {
   const [showStudyFeedback, setShowStudyFeedback] = useState(false)
   const submitted = useRef(false)
 
-  // Load questions from Supabase
   useEffect(() => {
     async function loadQuestions() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -47,7 +46,6 @@ function ExamContent() {
       if (dbErr) { setError(dbErr.message); setLoading(false); return }
       if (!data || data.length === 0) { setError('No hay preguntas disponibles para esta configuración.'); setLoading(false); return }
 
-      // Equitable distribution across topics
       const byTopic: Record<string, Question[]> = {}
       for (const q of data as Question[]) {
         if (!byTopic[q.topic]) byTopic[q.topic] = []
@@ -70,9 +68,8 @@ function ExamContent() {
     loadQuestions()
   }, []) // eslint-disable-line
 
-  // Timer
   useEffect(() => {
-    if (loading || finished) return
+    if (loading || finished || mode === 'study') return
     const id = setInterval(() => {
       setTimeLeft(t => {
         if (t <= 1) { clearInterval(id); handleFinish(); return 0 }
@@ -96,44 +93,42 @@ function ExamContent() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Save session
     await supabase.from('exam_sessions').insert({
-      user_id: user.id,
-      topics: topicsParam,
-      mode,
-      n_total: questions.length,
-      n_correct: correct,
-      n_wrong: wrong,
-      n_blank: blank,
-      score,
+      user_id: user.id, topics: topicsParam, mode,
+      n_total: questions.length, n_correct: correct, n_wrong: wrong, n_blank: blank, score,
     })
 
-    // Update failed questions
-    const wrongQIds = answers.filter(a => a.isCorrect === false).map(a => a.questionId)
+    const wrongQIds   = answers.filter(a => a.isCorrect === false).map(a => a.questionId)
     const correctQIds = answers.filter(a => a.isCorrect === true).map(a => a.questionId)
 
     if (wrongQIds.length > 0) {
       for (const qid of wrongQIds) {
-        await supabase.from('user_failed').upsert({ user_id: user.id, question_id: qid, fail_count: 1, last_failed_at: new Date().toISOString() }, { onConflict: 'user_id,question_id', ignoreDuplicates: false })
+        await supabase.from('user_failed').upsert(
+          { user_id: user.id, question_id: qid, fail_count: 1, last_failed_at: new Date().toISOString() },
+          { onConflict: 'user_id,question_id', ignoreDuplicates: false }
+        )
       }
     }
     if (correctQIds.length > 0) {
       await supabase.from('user_failed').delete().eq('user_id', user.id).in('question_id', correctQIds)
     }
 
-    // Update streak + total_exams via RPC / direct update
-    const today = new Date().toISOString().split('T')[0]
+    const today     = new Date().toISOString().split('T')[0]
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
     const { data: profile } = await supabase.from('profiles').select('streak, best_streak, last_study_date, total_exams').eq('id', user.id).single()
     if (profile) {
-      const lastDate = profile.last_study_date
-      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+      const lastDate  = profile.last_study_date
       const newStreak = lastDate === today ? profile.streak : lastDate === yesterday ? profile.streak + 1 : 1
       const newBest   = Math.max(newStreak, profile.best_streak)
-      await supabase.from('profiles').update({ streak: newStreak, best_streak: newBest, last_study_date: today, total_exams: profile.total_exams + 1 }).eq('id', user.id)
+      await supabase.from('profiles').update({
+        streak: newStreak, best_streak: newBest, last_study_date: today, total_exams: profile.total_exams + 1,
+      }).eq('id', user.id)
     }
 
-    // Redirect to results
-    const resultParams = new URLSearchParams({ correct: correct.toString(), wrong: wrong.toString(), blank: blank.toString(), score: score.toString(), total: questions.length.toString(), mode })
+    const resultParams = new URLSearchParams({
+      correct: correct.toString(), wrong: wrong.toString(), blank: blank.toString(),
+      score: score.toString(), total: questions.length.toString(), mode,
+    })
     router.push(`/results?${resultParams}`)
     setSubmitting(false)
   }, [answers, questions, topicsParam, mode]) // eslint-disable-line
@@ -153,117 +148,207 @@ function ExamContent() {
 
   const formatTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Cargando preguntas…</div>
-  if (error) return (
-    <div className="card" style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '1.5rem', marginBottom: 8 }}>⚠️</div>
-      <p style={{ color: 'var(--err)', marginBottom: 16 }}>{error}</p>
-      <button className="btn btn-accent" onClick={() => router.push('/setup')}>Volver a configuración</button>
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 12, animation: 'pulse-soft 1.5s ease infinite' }}>📚</div>
+      <div style={{ fontWeight: 600 }}>Preparando preguntas…</div>
     </div>
   )
-  if (finished && submitting) return <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Guardando resultados…</div>
+
+  if (error) return (
+    <div className="card animate-up" style={{ textAlign: 'center', padding: '40px 24px' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 12 }}>⚠️</div>
+      <p style={{ color: 'var(--err)', marginBottom: 20, fontWeight: 500 }}>{error}</p>
+      <button className="btn btn-accent" onClick={() => router.push('/setup')}>← Volver a configuración</button>
+    </div>
+  )
+
+  if (finished && submitting) return (
+    <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+      <div style={{ fontSize: '2rem', marginBottom: 12 }}>⏳</div>
+      <div style={{ fontWeight: 600 }}>Guardando resultados…</div>
+    </div>
+  )
 
   const q = questions[current]
   const currentAnswer = answers[current]
   const progress = ((current + 1) / questions.length) * 100
   const answered = answers.filter(a => a.selectedIndex !== null).length
-  const correct = answers.filter(a => a.isCorrect === true).length
-  const wrong   = answers.filter(a => a.isCorrect === false).length
-
+  const correct  = answers.filter(a => a.isCorrect === true).length
+  const wrong    = answers.filter(a => a.isCorrect === false).length
   const topicInfo = TOPICS.find(t => t.id === q?.topic)
+  const isAnswered = mode === 'study' && showStudyFeedback
+  const timeWarning = timeLeft < 60 && mode === 'exam'
 
   return (
     <div className="flex flex-col gap-4 animate-up">
-      {/* Header bar */}
-      <div className="card" style={{ padding: '12px 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: '.78rem', color: 'var(--muted)' }}>
-            Pregunta <strong>{current + 1}</strong> / {questions.length}
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {mode === 'exam' && (
-              <>
-                <span style={{ fontSize: '.75rem', color: 'var(--ok)', fontWeight: 700 }}>✓ {correct}</span>
-                <span style={{ fontSize: '.75rem', color: 'var(--err)', fontWeight: 700 }}>✗ {wrong}</span>
-              </>
-            )}
-            <span style={{ fontSize: '.82rem', fontWeight: 700, color: timeLeft < 60 ? 'var(--err)' : 'var(--ink)' }}>
-              ⏱ {formatTime(timeLeft)}
+
+      {/* ── Header bar ── */}
+      <div className="card" style={{ padding: '14px 18px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="badge" style={{ background: topicInfo?.tint, color: topicInfo?.color }}>
+              {topicInfo?.short}
+            </span>
+            <span style={{ fontSize: '.82rem', color: 'var(--muted)', fontWeight: 500 }}>
+              Pregunta <strong style={{ color: 'var(--ink)' }}>{current + 1}</strong> de {questions.length}
             </span>
           </div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {mode === 'exam' && (
+              <>
+                <span style={{ fontSize: '.8rem', color: 'var(--ok)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: '1rem' }}>✓</span> {correct}
+                </span>
+                <span style={{ fontSize: '.8rem', color: 'var(--err)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <span style={{ fontSize: '1rem' }}>✗</span> {wrong}
+                </span>
+              </>
+            )}
+            {mode === 'exam' && (
+              <div style={{
+                padding: '4px 10px',
+                borderRadius: 20,
+                background: timeWarning ? 'var(--err-soft)' : 'var(--bg2)',
+                color: timeWarning ? 'var(--err)' : 'var(--ink2)',
+                fontWeight: 700,
+                fontSize: '.85rem',
+                fontVariantNumeric: 'tabular-nums',
+                border: `1px solid ${timeWarning ? 'rgba(155,44,40,.2)' : 'var(--border)'}`,
+                transition: 'all .3s',
+              }}>
+                ⏱ {formatTime(timeLeft)}
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ height: 4, borderRadius: 99, background: 'var(--line)' }}>
-          <div style={{ height: '100%', borderRadius: 99, background: topicInfo?.color ?? 'var(--accent)', width: `${progress}%`, transition: 'width .3s' }} />
+
+        {/* Progress bar */}
+        <div className="progress-track">
+          <div className="progress-fill" style={{ width: `${progress}%`, background: topicInfo?.color ?? 'var(--accent)' }} />
         </div>
+
+        {/* Answered dots (mini) */}
+        {questions.length <= 30 && (
+          <div style={{ display: 'flex', gap: 3, marginTop: 8, flexWrap: 'wrap' }}>
+            {answers.map((a, i) => (
+              <div key={i} style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: i === current ? 'var(--accent)' : a.isCorrect === true ? 'var(--ok)' : a.isCorrect === false ? 'var(--err)' : a.selectedIndex !== null ? 'var(--muted2)' : 'var(--border2)',
+                transition: 'background .2s',
+                flexShrink: 0,
+              }} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Question card */}
-      <div className="card">
-        <div style={{ marginBottom: 8 }}>
-          <span className="badge" style={{ background: topicInfo?.tint, color: topicInfo?.color }}>{topicInfo?.short}</span>
-        </div>
-        <p style={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.5, color: 'var(--ink)', marginBottom: 20 }}>
+      {/* ── Question card ── */}
+      <div className="card" style={{ padding: '24px' }}>
+        <p style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.55, color: 'var(--ink)', marginBottom: 20 }}>
           {q?.question}
         </p>
 
         <div className="flex flex-col gap-2">
           {q?.shuffledAnswers.map((ans, idx) => {
             const isSelected = currentAnswer?.selectedIndex === idx
-            const isAnswered = mode === 'study' && showStudyFeedback
             const isCorrectAns = idx === q.correctIndex
-            let bg = 'var(--surface)', border = 'var(--line-2)', color = 'var(--ink)'
-            if (isSelected && !isAnswered) { bg = 'var(--accent-soft)'; border = 'var(--accent)'; color = 'var(--accent)' }
-            if (isAnswered && isCorrectAns) { bg = 'var(--ok-soft)'; border = 'var(--ok)'; color = 'var(--ok)' }
-            if (isAnswered && isSelected && !isCorrectAns) { bg = 'var(--err-soft)'; border = 'var(--err)'; color = 'var(--err)' }
+            let cls = 'answer-btn'
+            if (isAnswered && isCorrectAns) cls += ' correct'
+            else if (isAnswered && isSelected && !isCorrectAns) cls += ' wrong'
+            else if (isSelected && !isAnswered) cls += ' selected'
+
             return (
               <button
                 key={idx}
+                className={cls}
                 onClick={() => { if (!isAnswered && currentAnswer?.selectedIndex === null) selectAnswer(idx) }}
                 disabled={isAnswered || (mode === 'exam' && currentAnswer?.selectedIndex !== null)}
-                style={{ padding: '11px 14px', borderRadius: 10, border: `2px solid ${border}`, background: bg, color, textAlign: 'left', cursor: isAnswered ? 'default' : 'pointer', fontWeight: isSelected || (isAnswered && isCorrectAns) ? 700 : 400, fontSize: '.9rem', lineHeight: 1.4, transition: 'all .15s' }}
               >
-                <span style={{ opacity: .5, marginRight: 8, fontSize: '.75rem' }}>{String.fromCharCode(65 + idx)}</span>
-                {ans}
+                <span className="answer-letter">{String.fromCharCode(65 + idx)}</span>
+                <span>{ans}</span>
               </button>
             )
           })}
         </div>
 
-        {/* Study mode feedback */}
+        {/* Study feedback */}
         {mode === 'study' && showStudyFeedback && (
-          <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 10, background: currentAnswer?.isCorrect ? 'var(--ok-soft)' : 'var(--err-soft)', color: currentAnswer?.isCorrect ? 'var(--ok)' : 'var(--err)', fontWeight: 600, fontSize: '.85rem' }}>
-            {currentAnswer?.isCorrect ? '✓ Correcto' : `✗ Incorrecto — La respuesta era: "${q?.shuffledAnswers[q.correctIndex]}"`}
+          <div style={{
+            marginTop: 16,
+            padding: '12px 16px',
+            borderRadius: 10,
+            background: currentAnswer?.isCorrect ? 'var(--ok-soft)' : 'var(--err-soft)',
+            color: currentAnswer?.isCorrect ? 'var(--ok)' : 'var(--err)',
+            fontWeight: 600,
+            fontSize: '.88rem',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+            border: `1px solid ${currentAnswer?.isCorrect ? 'rgba(30,107,61,.15)' : 'rgba(155,44,40,.15)'}`,
+          }}>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{currentAnswer?.isCorrect ? '✓' : '✗'}</span>
+            <span>
+              {currentAnswer?.isCorrect
+                ? '¡Correcto!'
+                : <>Incorrecto — La respuesta correcta es: <strong>"{q?.shuffledAnswers[q.correctIndex]}"</strong></>
+              }
+            </span>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
-        <button className="btn btn-ghost" onClick={() => router.push('/setup')} style={{ fontSize: '.8rem' }}>
-          Abandonar
+      {/* ── Navigation ── */}
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+        <button
+          className="btn btn-ghost"
+          onClick={() => router.push('/setup')}
+          style={{ fontSize: '.8rem', padding: '8px 16px' }}
+        >
+          ← Abandonar
         </button>
+
         <div style={{ display: 'flex', gap: 8 }}>
           {mode === 'exam' && current < questions.length - 1 && currentAnswer?.selectedIndex === null && (
-            <button className="btn btn-ghost" onClick={() => setCurrent(c => c + 1)} style={{ fontSize: '.82rem' }}>
+            <button
+              className="btn btn-ghost"
+              onClick={() => setCurrent(c => c + 1)}
+              style={{ fontSize: '.82rem' }}
+            >
               En blanco →
             </button>
           )}
           {(mode === 'study' ? showStudyFeedback : currentAnswer?.selectedIndex !== null) && (
-            <button className="btn btn-accent" onClick={next}>
-              {current < questions.length - 1 ? 'Siguiente →' : 'Ver resultados'}
+            <button className="btn btn-accent" onClick={next} style={{ padding: '10px 24px' }}>
+              {current < questions.length - 1 ? 'Siguiente →' : '🏁 Ver resultados'}
             </button>
           )}
-          {mode === 'exam' && current === questions.length - 1 && (
-            <button className="btn btn-accent" onClick={() => handleFinish()}>
-              Terminar examen
+          {mode === 'exam' && current === questions.length - 1 && currentAnswer?.selectedIndex !== null && (
+            <button className="btn btn-accent" onClick={() => handleFinish()} style={{ padding: '10px 24px' }}>
+              🏁 Terminar examen
             </button>
           )}
         </div>
+      </div>
+
+      {/* Answered counter */}
+      <div style={{ textAlign: 'center', fontSize: '.75rem', color: 'var(--muted)' }}>
+        {answered} de {questions.length} respondidas
+        {mode === 'exam' && questions.length - current - 1 > 0 && ` · ${questions.length - current - 1} restantes`}
       </div>
     </div>
   )
 }
 
 export default function ExamPage() {
-  return <Suspense fallback={<div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)' }}>Cargando…</div>}><ExamContent /></Suspense>
+  return (
+    <Suspense fallback={
+      <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
+        <div style={{ fontSize: '2rem', marginBottom: 12 }}>📚</div>
+        <div style={{ fontWeight: 600 }}>Cargando…</div>
+      </div>
+    }>
+      <ExamContent />
+    </Suspense>
+  )
 }
