@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirma tu correo · Comunitaria II</title>
+</head>
+<body style="margin:0;padding:0;background:#eee8db;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+
+  <!-- Preheader (hidden) -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    Confirma tu dirección de correo para acceder a Comunitaria II · UAX
+  </div>
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eee8db;min-height:100vh;">
+    <tr>
+      <td align="center" style="padding:48px 16px;">
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+
+          <!-- LOGO -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <div style="width:48px;height:48px;border-radius:12px;background:#2d4a3e;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#ffffff;letter-spacing:-0.03em;text-align:center;line-height:48px;">
+                      CII
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              <div style="margin-top:10px;font-size:15px;font-weight:800;color:#2d4a3e;letter-spacing:-0.01em;">
+                Comunitaria II
+              </div>
+              <div style="margin-top:3px;font-size:11px;color:#7a7265;letter-spacing:0.02em;">
+                ENFERMERÍA FAMILIAR Y COMUNITARIA · UAX
+              </div>
+            </td>
+          </tr>
+
+          <!-- CARD -->
+          <tr>
+            <td style="background:#ffffff;border-radius:20px;border:1px solid #d8d0be;box-shadow:0 4px 24px rgba(26,23,20,0.08);overflow:hidden;">
+
+              <!-- Top accent bar -->
+              <div style="height:4px;background:linear-gradient(90deg,#2d4a3e,#3d6352);"></div>
+
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 36px 36px;">
+
+                    <!-- Icon -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+                      <tr>
+                        <td style="width:64px;height:64px;border-radius:50%;background:#dce8e2;border:1.5px solid rgba(45,74,62,0.15);text-align:center;vertical-align:middle;">
+                          <span style="font-size:26px;line-height:64px;">📬</span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Heading -->
+                    <h1 style="margin:0 0 12px;font-size:24px;font-weight:900;letter-spacing:-0.03em;color:#1a1714;line-height:1.1;">
+                      Confirma tu correo
+                    </h1>
+
+                    <!-- Body text -->
+                    <p style="margin:0 0 8px;font-size:15px;color:#7a7265;line-height:1.7;">
+                      Hola, ya casi estás. Pulsa el botón de abajo para verificar
+                      tu dirección y activar tu cuenta en <strong style="color:#1a1714;">Comunitaria II</strong>.
+                    </p>
+                    <p style="margin:0 0 32px;font-size:14px;color:#a09890;line-height:1.6;">
+                      490 preguntas tipo test de Enfermería Familiar y Comunitaria II te esperan.
+                    </p>
+
+                    <!-- CTA Button -->
+                    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:28px;">
+                      <tr>
+                        <td style="border-radius:12px;background:#2d4a3e;box-shadow:0 4px 16px rgba(45,74,62,0.3);">
+                          <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup"
+                             style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;border-radius:12px;">
+                            Verificar mi correo &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Divider -->
+                    <div style="height:1px;background:#e8e0d0;margin-bottom:24px;"></div>
+
+                    <!-- Fallback link -->
+                    <p style="margin:0 0 6px;font-size:12px;color:#a09890;line-height:1.6;">
+                      Si el botón no funciona, copia y pega este enlace en tu navegador:
+                    </p>
+                    <p style="margin:0;font-size:11px;word-break:break-all;">
+                      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup"
+                         style="color:#2d4a3e;text-decoration:underline;">
+                        {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup
+                      </a>
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0 0 6px;font-size:11px;color:#a09890;letter-spacing:0.03em;">
+                Este enlace caduca en <strong>24 horas</strong> y solo puede usarse una vez.
+              </p>
+              <p style="margin:0;font-size:11px;color:#a09890;">
+                Si no has creado ninguna cuenta, puedes ignorar este mensaje.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
