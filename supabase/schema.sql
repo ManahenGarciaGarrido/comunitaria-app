@@ -156,3 +156,24 @@ order by avg_score desc, total_correct desc;
 
 -- Grant select on view to authenticated users
 grant select on public.ranking to authenticated;
+
+-- ── VOKAB PLATFORM MIGRATION ────────────────────────
+-- Run this block if upgrading from Comunitaria-only schema
+
+-- Add platform metadata fields to questions
+alter table public.questions
+  add column if not exists university text      not null default 'UAX',
+  add column if not exists degree     text      not null default 'Enfermería',
+  add column if not exists year       integer   not null default 3,
+  add column if not exists subject    text      not null default 'Comunitaria II',
+  add column if not exists is_public  boolean   not null default true;
+
+-- Allow unauthenticated (anon) users to read public questions (for /browse page)
+create policy "Public questions readable by everyone"
+  on public.questions for select
+  using (is_public = true);
+
+-- Index for fast browse queries
+create index if not exists idx_questions_university on public.questions(university);
+create index if not exists idx_questions_subject    on public.questions(subject);
+create index if not exists idx_questions_is_public  on public.questions(is_public);

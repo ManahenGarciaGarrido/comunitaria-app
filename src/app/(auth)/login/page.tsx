@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
-  const [email, setEmail] = useState('')
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [error,    setError]    = useState('')
+  const [loading,  setLoading]  = useState(false)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -22,17 +22,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="card animate-up w-full max-w-sm">
-      <div className="mb-6 text-center">
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>📚</div>
-        <h1 style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--ink)' }}>Comunitaria II</h1>
-        <p style={{ color: 'var(--muted)', fontSize: '.85rem' }}>Inicia sesión para continuar</p>
-      </div>
+    <div className="animate-up" style={{
+      background: 'var(--card)',
+      border: '1px solid var(--border)',
+      borderRadius: 20,
+      padding: '36px 32px',
+      boxShadow: '0 8px 40px rgba(91,76,245,.1), 0 2px 8px rgba(15,14,13,.06)',
+    }}>
+      {/* Top accent bar */}
+      <div style={{
+        height: 3,
+        background: 'linear-gradient(90deg, var(--brand), var(--brand-3))',
+        borderRadius: '2px 2px 0 0',
+        margin: '-36px -32px 28px',
+      }} />
 
-      <form onSubmit={handleLogin} className="flex flex-col gap-3">
+      <h1 style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '-.025em', color: 'var(--ink)', marginBottom: 4 }}>
+        Bienvenido de nuevo
+      </h1>
+      <p style={{ fontSize: '.875rem', color: 'var(--muted)', marginBottom: 28 }}>
+        Inicia sesión para continuar estudiando
+      </p>
+
+      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--ink-2)', display: 'block', marginBottom: 4 }}>
-            Email
+          <label style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--ink2)', display: 'block', marginBottom: 6, letterSpacing: '.01em' }}>
+            Correo electrónico
           </label>
           <input
             className="input"
@@ -40,11 +55,11 @@ export default function LoginPage() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            placeholder="alumna@uax.es"
+            placeholder="tu@email.com"
           />
         </div>
         <div>
-          <label style={{ fontSize: '.82rem', fontWeight: 600, color: 'var(--ink-2)', display: 'block', marginBottom: 4 }}>
+          <label style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--ink2)', display: 'block', marginBottom: 6, letterSpacing: '.01em' }}>
             Contraseña
           </label>
           <input
@@ -58,19 +73,37 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'var(--err-soft)', color: 'var(--err)', borderRadius: 8, padding: '8px 12px', fontSize: '.82rem' }}>
-            {error}
+          <div style={{
+            background: 'var(--err-soft)', color: 'var(--err)',
+            border: '1px solid rgba(220,38,38,.2)',
+            borderRadius: 10, padding: '10px 14px', fontSize: '.83rem',
+            display: 'flex', gap: 8, alignItems: 'center',
+          }}>
+            <span>⚠️</span> {error}
           </div>
         )}
 
-        <button className="btn btn-accent" type="submit" disabled={loading} style={{ marginTop: 4 }}>
-          {loading ? 'Entrando…' : 'Entrar'}
+        <button
+          className="btn btn-accent"
+          type="submit"
+          disabled={loading}
+          style={{ marginTop: 4, padding: '12px 24px', fontSize: '.9rem', borderRadius: 12 }}>
+          {loading ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .7s linear infinite', display: 'inline-block' }} />
+              Entrando…
+            </span>
+          ) : 'Iniciar sesión →'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', marginTop: 16, fontSize: '.82rem', color: 'var(--muted)' }}>
+      <div style={{ height: 1, background: 'var(--border)', margin: '24px 0' }} />
+
+      <p style={{ textAlign: 'center', fontSize: '.84rem', color: 'var(--muted)' }}>
         ¿No tienes cuenta?{' '}
-        <Link href="/register" style={{ color: 'var(--accent)', fontWeight: 600 }}>Regístrate</Link>
+        <Link href="/register" style={{ color: 'var(--brand)', fontWeight: 700, textDecoration: 'none' }}>
+          Regístrate gratis →
+        </Link>
       </p>
     </div>
   )
