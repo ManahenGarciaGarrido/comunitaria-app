@@ -25,6 +25,16 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Public routes — always accessible (landing, auth pages)
+  const publicRoutes = ['/', '/browse', '/auth/confirm', '/auth/verified', '/auth/error']
+  if (publicRoutes.some(r => pathname === r || pathname.startsWith(r + '/'))) {
+    // If logged-in user hits auth pages, send to dashboard
+    if (user && ['/login', '/register'].includes(pathname)) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    return supabaseResponse
+  }
+
   // Auth routes — redirect to home if already logged in
   if (['/login', '/register'].includes(pathname)) {
     if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
